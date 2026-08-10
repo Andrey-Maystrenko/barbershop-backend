@@ -6,7 +6,8 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "seed": "node src/seeds/seedBarbers.js",
-    "seed-hairstyles": "node src/seeds/seedHairstyles.js"
+    "seed-hairstyles": "node src/seeds/seedHairstyles.js",
+    "seed-materials": "node src/seeds/seedMaterials.js"
   },
   "keywords": [],
   "author": "",
