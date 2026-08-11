@@ -263,17 +263,29 @@ materialSchema.methods.useStock = async function(amount, reason, userId) {
 };
 
 // Middleware - обновление isLowStock перед сохранением
-materialSchema.pre('save', function(next) {
-  this.isLowStock = this.quantity <= this.reorderLevel;
-  next();
-});
+// materialSchema.pre('save', function(next) {
+//   this.isLowStock = this.quantity <= this.reorderLevel;
+//   next();
+// });
 
-// Middleware - проверка срока годности
-materialSchema.pre('save', function(next) {
+/// ===== MIDDLEWARE - FIXED VERSION =====
+// ✅ CORRECT: Using async/await (no next parameter)
+materialSchema.pre('save', async function() {
+  // Update low stock status
+  this.isLowStock = this.quantity <= this.reorderLevel;
+  
+  // Check if expired
   if (this.expiryDate && this.expiryDate < new Date()) {
     this.isActive = false;
   }
-  next();
 });
+
+// Middleware - проверка срока годности
+// materialSchema.pre('save', function(next) {
+//   if (this.expiryDate && this.expiryDate < new Date()) {
+//     this.isActive = false;
+//   }
+//   next();
+// });
 
 module.exports = mongoose.model('Material', materialSchema);
