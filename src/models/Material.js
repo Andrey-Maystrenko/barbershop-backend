@@ -281,11 +281,11 @@ materialSchema.pre('save', async function() {
 });
 
 // Middleware - проверка срока годности
-// materialSchema.pre('save', function(next) {
-//   if (this.expiryDate && this.expiryDate < new Date()) {
-//     this.isActive = false;
-//   }
-//   next();
-// });
+materialSchema.pre('save', function() {
+  if (this.expiryDate && this.expiryDate < new Date()) {
+    this.isActive = false;
+  }
+  // next();
+});
 
 module.exports = mongoose.model('Material', materialSchema);

@@ -109,10 +109,10 @@ hairstyleSchema.index({ price: 1 });
 hairstyleSchema.index({ popularity: -1 });
 
 // Middleware: Update timestamps on save
-// hairstyleSchema.pre('save', function(next) {
-//   this.updatedAt = Date.now();
-//   next();
-// });
+hairstyleSchema.pre('save', function() {
+  this.updatedAt = Date.now();
+  // next();
+});
 
 // Static method to get popular hairstyles
 hairstyleSchema.statics.getPopular = async function(limit = 5) {

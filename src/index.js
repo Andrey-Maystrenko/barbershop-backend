@@ -6,12 +6,22 @@ require('dotenv').config();
 const barberRoutes = require('./routes/barberRoutes');
 const hairstyleRoutes = require('./routes/hairstyleRoutes');
 const materialRoutes = require('./routes/materialRoutes');
+const clientRoutes = require('./routes/clientRoutes');
+const serviceRoutes = require('./routes/serviceRoutes');
+const operationRoutes = require('./routes/operationRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Middleware
-app.use(cors());
+// app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: false,
+  optionsSuccessStatus: 200
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -19,10 +29,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/barbers', barberRoutes);
 app.use('/api/hairstyles', hairstyleRoutes);
 app.use('/api/materials', materialRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/services', serviceRoutes);
+app.use('/api/operations', operationRoutes);
 
 // Root route
 app.get('/', (req, res) => {
-  res.send('Barbershop API is running');
+  // res.send('Barbershop API is running');
+  res.json({ message: 'Barbershop API is running' });
 });
 
 // MongoDB connection
