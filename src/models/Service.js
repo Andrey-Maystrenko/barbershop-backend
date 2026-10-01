@@ -7,14 +7,14 @@ const serviceSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
-  
+
   // ===== STATUS =====
   status: {
     type: String,
     enum: ['pending', 'in-progress', 'completed', 'cancelled', 'no-show'],
     default: 'pending'
   },
-  
+
   // ===== CLIENT INFORMATION =====
   client: {
     _id: {
@@ -38,7 +38,7 @@ const serviceSchema = new mongoose.Schema({
       trim: true
     }
   },
-  
+
   // ===== BARBER INFORMATION =====
   barber: {
     _id: {
@@ -56,7 +56,7 @@ const serviceSchema = new mongoose.Schema({
       default: []
     }
   },
-  
+
   // ===== HAIRSTYLE INFORMATION =====
   hairstyle: {
     _id: {
@@ -84,7 +84,7 @@ const serviceSchema = new mongoose.Schema({
       min: 5
     }
   },
-  
+
   // ===== PRICING =====
   pricing: {
     basePrice: {
@@ -140,7 +140,7 @@ const serviceSchema = new mongoose.Schema({
       default: 0
     }
   },
-  
+
   // ===== COSTS =====
   costs: {
     // Barber cost (provided by frontend)
@@ -149,21 +149,21 @@ const serviceSchema = new mongoose.Schema({
       default: 0,
       min: 0
     },
-    
+
     // Material costs (calculated by backend)
     materials: {
       type: Number,
       default: 0,
       min: 0
     },
-    
+
     // Overhead cost (provided by frontend)
     overhead: {
       type: Number,
       default: 0,
       min: 0
     },
-    
+
     // Additional costs (provided by frontend)
     additional: [{
       description: {
@@ -177,7 +177,7 @@ const serviceSchema = new mongoose.Schema({
         min: 0
       }
     }],
-    
+
     // Total cost (calculated by backend from all costs above)
     total: {
       type: Number,
@@ -185,7 +185,7 @@ const serviceSchema = new mongoose.Schema({
       min: 0
     }
   },
-  
+
   // ===== MATERIALS USED =====
   materials: [{
     materialId: {
@@ -218,7 +218,35 @@ const serviceSchema = new mongoose.Schema({
       min: 0
     }
   }],
-  
+
+  // ===== OPERATIONS =====
+  operations: [{
+    operationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Operation',
+      required: true
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    category: {
+      type: String,
+      required: true
+    },
+    duration: {
+      type: Number,
+      required: true,
+      min: 1
+    },
+    price: {
+      type: Number,
+      required: true,
+      min: 0
+    }
+  }],
+
   // ===== SCHEDULING =====
   scheduledDate: {
     type: Date,
@@ -241,7 +269,7 @@ const serviceSchema = new mongoose.Schema({
   endTime: {
     type: Date
   },
-  
+
   // ===== NOTES =====
   clientNotes: {
     type: String,
@@ -258,7 +286,7 @@ const serviceSchema = new mongoose.Schema({
     maxlength: 500,
     trim: true
   },
-  
+
   // ===== FOLLOW-UP =====
   followUpDate: {
     type: Date
@@ -268,7 +296,7 @@ const serviceSchema = new mongoose.Schema({
     maxlength: 500,
     trim: true
   },
-  
+
   // ===== RATING & REVIEW =====
   rating: {
     score: {
@@ -286,7 +314,7 @@ const serviceSchema = new mongoose.Schema({
       type: Date
     }
   },
-  
+
   // ===== AUDIT =====
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -309,7 +337,7 @@ const serviceSchema = new mongoose.Schema({
     maxlength: 500,
     trim: true
   },
-  
+
   // ===== TIMELINE =====
   timeline: [{
     status: {
@@ -331,7 +359,7 @@ const serviceSchema = new mongoose.Schema({
       ref: 'User'
     }
   }]
-  
+
 }, {
   timestamps: true
 });
@@ -352,20 +380,20 @@ serviceSchema.index({ scheduledDate: 1, status: 1 });
 serviceSchema.index({ startTime: 1, status: 1 });
 
 // ===== VIRTUALS =====
-serviceSchema.virtual('isCompleted').get(function() {
+serviceSchema.virtual('isCompleted').get(function () {
   return this.status === 'completed';
 });
 
-serviceSchema.virtual('isActive').get(function() {
+serviceSchema.virtual('isActive').get(function () {
   return ['pending', 'in-progress'].includes(this.status);
 });
 
-serviceSchema.virtual('durationHours').get(function() {
+serviceSchema.virtual('durationHours').get(function () {
   if (!this.duration) return '0h 0m';
   return `${Math.floor(this.duration / 60)}h ${this.duration % 60}m`;
 });
 
-serviceSchema.virtual('formattedPrice').get(function() {
+serviceSchema.virtual('formattedPrice').get(function () {
   return `$${this.pricing.totalPrice.toFixed(2)}`;
 });
 
@@ -387,7 +415,7 @@ serviceSchema.virtual('formattedPrice').get(function() {
 // };
 
 // ===== PRE-SAVE MIDDLEWARE =====
-serviceSchema.pre('save', async function() {
+serviceSchema.pre('save', async function () {
   // 1. Generate service number if new
   if (this.isNew) {
     const date = new Date();
@@ -397,7 +425,7 @@ serviceSchema.pre('save', async function() {
     const count = await mongoose.model('Service').countDocuments();
     this.serviceNumber = `SRV-${year}${month}${day}-${String(count + 1).padStart(4, '0')}`;
   }
-  
+
   // 2. Update timeline when status changes
   if (this.isModified('status')) {
     this.timeline.push({
@@ -406,14 +434,14 @@ serviceSchema.pre('save', async function() {
       updatedBy: this.updatedBy
     });
   }
-  
+
   // 3. Calculate total price
-  if (this.isModified('pricing.basePrice') || 
-      this.isModified('pricing.discount') || 
-      this.isModified('pricing.additionalCharges')) {
-    
+  if (this.isModified('pricing.basePrice') ||
+    this.isModified('pricing.discount') ||
+    this.isModified('pricing.additionalCharges')) {
+
     let total = this.pricing.basePrice || 0;
-    
+
     // Apply discount
     if (this.pricing.discount > 0) {
       if (this.pricing.discountType === 'percentage') {
@@ -422,17 +450,17 @@ serviceSchema.pre('save', async function() {
         total = total - this.pricing.discount;
       }
     }
-    
+
     // Add additional charges
     if (this.pricing.additionalCharges && this.pricing.additionalCharges.length > 0) {
       this.pricing.additionalCharges.forEach(charge => {
         total += charge.amount;
       });
     }
-    
+
     this.pricing.totalPrice = Math.max(0, total);
   }
-  
+
   // 4. Calculate material costs and total costs
   if (this.isModified('materials') || this.isModified('costs')) {
     // Calculate material costs from materials array
@@ -443,45 +471,45 @@ serviceSchema.pre('save', async function() {
       });
     }
     this.costs.materials = materialCost;
-    
+
     // Calculate total cost (sum of all costs)
     let totalCost = 0;
     totalCost += this.costs.barber || 0;
     totalCost += this.costs.materials || 0;
     totalCost += this.costs.overhead || 0;
-    
+
     if (this.costs.additional && this.costs.additional.length > 0) {
       this.costs.additional.forEach(cost => {
         totalCost += cost.amount || 0;
       });
     }
-    
+
     this.costs.total = totalCost;
   }
-  
+
   // 5. Set start and end times
   if (this.scheduledDate && this.scheduledTime) {
     const [hours, minutes] = this.scheduledTime.split(':').map(Number);
     const startDateTime = new Date(this.scheduledDate);
     startDateTime.setHours(hours, minutes, 0, 0);
     this.startTime = startDateTime;
-    
+
     const endDateTime = new Date(startDateTime);
     const duration = this.duration || 30;
     endDateTime.setMinutes(endDateTime.getMinutes() + duration);
     this.endTime = endDateTime;
   }
-  
+
   // next();
 });
 
 // ===== STATIC METHODS =====
-serviceSchema.statics.getTodayServices = async function() {
+serviceSchema.statics.getTodayServices = async function () {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  
+
   return this.find({
     scheduledDate: {
       $gte: today,
@@ -490,7 +518,7 @@ serviceSchema.statics.getTodayServices = async function() {
   }).sort({ scheduledTime: 1 });
 };
 
-serviceSchema.statics.getByBarber = async function(barberId, date) {
+serviceSchema.statics.getByBarber = async function (barberId, date) {
   const query = { 'barber._id': barberId };
   if (date) {
     const start = new Date(date);
@@ -502,13 +530,13 @@ serviceSchema.statics.getByBarber = async function(barberId, date) {
   return this.find(query).sort({ scheduledTime: 1 });
 };
 
-serviceSchema.statics.getByClient = async function(clientId) {
+serviceSchema.statics.getByClient = async function (clientId) {
   return this.find({ 'client._id': clientId })
     .sort({ scheduledDate: -1 });
 };
 
 // ===== INSTANCE METHODS =====
-serviceSchema.methods.complete = async function(notes) {
+serviceSchema.methods.complete = async function (notes) {
   this.status = 'completed';
   this.barberNotes = notes || this.barberNotes;
   this.completedBy = this.updatedBy;
@@ -521,7 +549,7 @@ serviceSchema.methods.complete = async function(notes) {
   return this.save();
 };
 
-serviceSchema.methods.cancel = async function(reason) {
+serviceSchema.methods.cancel = async function (reason) {
   this.status = 'cancelled';
   this.cancellationReason = reason;
   this.cancelledBy = this.updatedBy;
@@ -534,7 +562,7 @@ serviceSchema.methods.cancel = async function(reason) {
   return this.save();
 };
 
-serviceSchema.methods.start = async function() {
+serviceSchema.methods.start = async function () {
   this.status = 'in-progress';
   this.timeline.push({
     status: 'in-progress',
@@ -544,21 +572,21 @@ serviceSchema.methods.start = async function() {
   return this.save();
 };
 
-serviceSchema.methods.addNote = async function(note, type) {
+serviceSchema.methods.addNote = async function (note, type) {
   if (type === 'client') this.clientNotes = note;
   else if (type === 'barber') this.barberNotes = note;
   else this.internalNotes = note;
   return this.save();
 };
 
-serviceSchema.methods.addRating = async function(score, review) {
+serviceSchema.methods.addRating = async function (score, review) {
   this.rating.score = score;
   this.rating.review = review;
   this.rating.reviewedAt = new Date();
   return this.save();
 };
 
-serviceSchema.methods.updateStatus = async function(newStatus, note) {
+serviceSchema.methods.updateStatus = async function (newStatus, note) {
   this.status = newStatus;
   this.timeline.push({
     status: newStatus,
