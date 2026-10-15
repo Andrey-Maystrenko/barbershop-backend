@@ -365,7 +365,7 @@ const serviceSchema = new mongoose.Schema({
 });
 
 // ===== INDEXES =====
-serviceSchema.index({ serviceNumber: 1 });
+// serviceSchema.index({ serviceNumber: 1 });
 serviceSchema.index({ 'client._id': 1 });
 serviceSchema.index({ 'barber._id': 1 });
 serviceSchema.index({ 'hairstyle._id': 1 });
@@ -417,13 +417,26 @@ serviceSchema.virtual('formattedPrice').get(function () {
 // ===== PRE-SAVE MIDDLEWARE =====
 serviceSchema.pre('save', async function () {
   // 1. Generate service number if new
-  if (this.isNew) {
+  // if (this.isNew) {
+  //   const date = new Date();
+  //   const year = date.getFullYear();
+  //   const month = String(date.getMonth() + 1).padStart(2, '0');
+  //   const day = String(date.getDate()).padStart(2, '0');
+  //   const count = await mongoose.model('Service').countDocuments();
+  //   this.serviceNumber = `SRV-${year}${month}${day}-${String(count + 1).padStart(4, '0')}`;
+  // }
+
+  if (this.isNew && !this.serviceNumber) {
     const date = new Date();
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    const count = await mongoose.model('Service').countDocuments();
-    this.serviceNumber = `SRV-${year}${month}${day}-${String(count + 1).padStart(4, '0')}`;
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const random = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+
+    this.serviceNumber = `SRV-${year}${month}${day}-${hours}${minutes}${seconds}${random}`;
   }
 
   // 2. Update timeline when status changes

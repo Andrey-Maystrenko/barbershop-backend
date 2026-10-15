@@ -85,7 +85,7 @@ const operationSchema = new mongoose.Schema({
 });
 
 // ===== INDEXES =====
-operationSchema.index({ name: 1 });
+// operationSchema.index({ name: 1 });
 operationSchema.index({ category: 1 });
 operationSchema.index({ price: 1 });
 operationSchema.index({ duration: 1 });

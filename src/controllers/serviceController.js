@@ -306,10 +306,36 @@ exports.updateService = async (req, res) => {
   }
 };
 
+// // ===== DELETE SERVICE =====
+// exports.deleteService = async (req, res) => {
+//   try {
+//     const service = await Service.findByIdAndDelete(req.params.id);
+
+//     if (!service) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Service not found'
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: 'Service deleted successfully'
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: 'Error deleting service',
+//       error: error.message
+//     });
+//   }
+// };
+
 // ===== DELETE SERVICE =====
 exports.deleteService = async (req, res) => {
   try {
-    const service = await Service.findByIdAndDelete(req.params.id);
+    // Find the service first (don't delete yet)
+    const service = await Service.findById(req.params.id);
 
     if (!service) {
       return res.status(404).json({
@@ -318,11 +344,32 @@ exports.deleteService = async (req, res) => {
       });
     }
 
+    console.log('🗑️ Deleting service:', service.serviceNumber);
+
+    // ===== RESTORE MATERIAL STOCK =====
+    if (service.materials && service.materials.length > 0) {
+      for (const item of service.materials) {
+        const material = await Material.findById(item.materialId);
+        if (material) {
+          console.log(`📦 Restoring ${item.quantityUsed} ${item.unit} of ${material.name}`);
+          await material.addStock(
+            item.quantityUsed,
+            `Restored from deleted service ${service.serviceNumber}`,
+            req.user?._id
+          );
+        }
+      }
+    }
+
+    // ===== DELETE THE SERVICE =====
+    await Service.findByIdAndDelete(req.params.id);
+
     res.status(200).json({
       success: true,
-      message: 'Service deleted successfully'
+      message: 'Service deleted and material stock restored'
     });
   } catch (error) {
+    console.error('❌ Error deleting service:', error);
     res.status(500).json({
       success: false,
       message: 'Error deleting service',
@@ -500,6 +547,45 @@ exports.addRating = async (req, res) => {
     res.status(400).json({
       success: false,
       message: 'Error adding rating',
+      error: error.message
+    });
+  }
+};
+
+// ===== GET SERVICES BY DATE RANGE =====
+exports.getServicesByDateRange = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'startDate and endDate are required'
+      });
+    }
+
+    console.log('🔍 Fetching services from', startDate, 'to', endDate);
+
+    const services = await Service.find({
+      scheduledDate: {
+        $gte: new Date(startDate + 'T00:00:00.000Z'),
+        $lte: new Date(endDate + 'T23:59:59.999Z')
+      },
+      status: { $ne: 'cancelled' }
+    }).sort({ scheduledDate: 1, scheduledTime: 1 });
+
+    console.log('✅ Found', services.length, 'services');
+
+    res.status(200).json({
+      success: true,
+      count: services.length,
+      data: services
+    });
+  } catch (error) {
+    console.error('❌ Error fetching services by date range:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching services',
       error: error.message
     });
   }

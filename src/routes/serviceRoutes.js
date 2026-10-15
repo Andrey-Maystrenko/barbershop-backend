@@ -12,12 +12,14 @@ const {
   completeService,
   cancelService,
   startService,
-  addRating
+  addRating,
+  getServicesByDateRange
 } = require('../controllers/serviceController');
 
 // ===== GET ROUTES =====
 router.get('/', getAllServices);
 router.get('/today', getTodayServices);
+router.get('/by-date-range', getServicesByDateRange); 
 router.get('/barber/:barberId', getServicesByBarber);
 router.get('/client/:clientId', getServicesByClient);
 router.get('/:id', getServiceById);

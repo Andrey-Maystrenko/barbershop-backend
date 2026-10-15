@@ -81,7 +81,7 @@ const clientSchema = new mongoose.Schema({
 
 // ===== INDEXES =====
 clientSchema.index({ firstName: 1, lastName: 1 });
-clientSchema.index({ email: 1 });
+// clientSchema.index({ email: 1 });
 clientSchema.index({ phone: 1 });
 
 // ===== VIRTUALS =====
